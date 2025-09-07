@@ -35,14 +35,13 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      # ✅ Restore manifest from cache
+      # Restore manifest from main branch (cache or checkout)
       - name: Restore dbt manifest cache
         uses: actions/cache@v3
         with:
           path: target/manifest.json
           key: dbt-manifest-main
 
-      # ✅ Copy manifest into state if found
       - name: Prepare state directory
         run: |
           mkdir -p state
@@ -53,28 +52,35 @@ jobs:
             echo "⚠️ No manifest found in cache"
           fi
 
-      # ✅ Print models that will run
-      - name: Preview model selection
+      - name: List models selected for build
         run: |
           if [ -f state/manifest.json ]; then
             echo "👉 Models selected for build:"
-            dbt ls --select +state:modified+ --state state/ --defer --target dev
+            dbt ls --select +state:modified+ --state state/ --defer-state state/ --target dev
           else
             echo "⚠️ No state manifest found, will run full build"
           fi
+        env:
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
-      # ✅ Run dbt build with forced downstream
-      - name: Run dbt with state
+      # Run dbt build with modified + downstream models
+      - name: Run dbt build
         run: |
           if [ -f state/manifest.json ]; then
-            echo "Previous manifest found, running modified + ALL downstream models"
-            dbt build --select +state:modified+ --state state/ --defer --target dev
+            echo "✅ Running modified + downstream models"
+            dbt build --select +state:modified+ --state state/ --defer-state state/ --target dev
           else
-            echo "No manifest found, running full build"
+            echo "⚠️ No manifest found, running full build"
             dbt build --target dev
           fi
+        env:
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
-      # ✅ Save manifest back into cache for next runs
+      # Save manifest for future PRs
       - name: Save dbt manifest to cache
         if: always()
         uses: actions/cache/save@v3
