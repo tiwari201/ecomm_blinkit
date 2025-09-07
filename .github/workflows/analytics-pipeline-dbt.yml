@@ -1,4 +1,4 @@
-name: dbt_main_build
+name: dbt_pr_build
 
 on:
   push:
