@@ -1,0 +1,46 @@
+name: dbt-ci-workflow
+
+on:
+  workflow_dispatch:    # allow manual runs
+  pull_request:         # trigger when PR is raised
+    branches:
+      - main            # adjust branch if needed
+
+jobs:
+  ci-run:
+    runs-on: self-hosted
+    env:
+      MYSQL_USER: ${{ secrets.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+
+    steps:
+      - name: Print Greeting
+        run: echo "Executing greetings"
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check Python version
+        run: python3 --version
+
+      - name: Set up Python venv and install dbt
+        run: |
+          python3.11 -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip setuptools wheel
+          # ✅ pin protobuf and dbt versions for stability
+          pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
+          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
+          echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Set up dbt profile
+        run: |
+          mkdir -p ~/.dbt
+          cp .github/profiles.yml ~/.dbt/profiles.yml
+
+      - name: Run dbt models
+        run: dbt build
+
+      - name: Print End
+        run: echo "Exiting the workflow"
