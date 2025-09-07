@@ -1,8 +1,8 @@
-name: dbt-pr-build
+name: dbt-mysql-build
 
 on:
-  workflow_dispatch:
-  pull_request:
+  workflow_dispatch:    # manual trigger
+  pull_request:         # runs when PR is opened/updated against main
     branches:
       - main
 
@@ -15,6 +15,9 @@ jobs:
       MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
     steps:
+      - name: Print Greeting
+        run: echo "Starting dbt workflow"
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -26,6 +29,7 @@ jobs:
           python3.11 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip setuptools wheel
+          # pin protobuf and dbt versions for stability
           pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
@@ -35,31 +39,20 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: Cache dbt manifest from previous main build
-        uses: actions/cache@v3
-        id: dbt-manifest-cache
-        with:
-          path: target/manifest.json
-          key: dbt-manifest-main
-          restore-keys: dbt-manifest-main
-
       - name: Run dbt models selectively if possible
         run: |
           mkdir -p state
+          git fetch origin main
+          # try to get previous manifest from main
+          git checkout origin/main -- target/manifest.json || echo "No manifest in main branch yet"
 
-          if [ -f target/manifest.json ]; then
-              cp target/manifest.json state/manifest.json
-              echo "Previous manifest found, running modified + downstream models"
-              # ✅ Correct: use valid target 'dev' instead of 'main'
-              dbt build --select state:modified+ --state state/ --defer --target dev
+          if [ ! -f target/manifest.json ]; then
+              echo "No previous manifest found, running full build"
+              dbt build
           else
-              echo "No cached manifest found, running full build"
-              dbt build --target dev
+              echo "Previous manifest found, running only changed + downstream models"
+              dbt build --select state:modified+ --state target/
           fi
 
-      - name: Update cached manifest
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "Updating cached manifest.json from main branch"
-          mkdir -p target
-          cp target/manifest.json target/manifest.json
+      - name: Print End
+        run: echo "dbt workflow completed"
