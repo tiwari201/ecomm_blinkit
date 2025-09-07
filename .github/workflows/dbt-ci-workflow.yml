@@ -1,13 +1,13 @@
-name: dbt-ci-workflow
+name: dbt-mysql-build
 
 on:
-  workflow_dispatch:    # allow manual runs
-  pull_request:         # trigger when PR is raised
+  workflow_dispatch:    # manual trigger
+  pull_request:         # runs when PR is opened/updated against main
     branches:
-      - main            # adjust branch if needed
+      - main
 
 jobs:
-  ci-run:
+  dbt-job:
     runs-on: self-hosted
     env:
       MYSQL_USER: ${{ secrets.MYSQL_USER }}
@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Print Greeting
-        run: echo "Executing greetings"
+        run: echo "Starting dbt workflow"
 
       - name: Checkout code
         uses: actions/checkout@v3
@@ -29,7 +29,7 @@ jobs:
           python3.11 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip setuptools wheel
-          # ✅ pin protobuf and dbt versions for stability
+          # pin protobuf and dbt versions for stability
           pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
@@ -39,21 +39,20 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: Run only changed + downstream dbt models
+      - name: Run dbt models selectively if possible
         run: |
-          # fetch main branch manifest for state comparison
-          git fetch origin main
           mkdir -p state
+          git fetch origin main
+          # try to get previous manifest from main
           git checkout origin/main -- target/manifest.json || echo "No manifest in main branch yet"
 
-          # run only changed models + downstreams
-          if [ ! -f state/manifest.json ]; then
-            echo "No previous manifest found, running full build"
-            dbt build
+          if [ ! -f target/manifest.json ]; then
+              echo "No previous manifest found, running full build"
+              dbt build
           else
-            echo "Previous manifest found, running only changed + downstream models"
-          dbt build --select state:modified+ --state state/
+              echo "Previous manifest found, running only changed + downstream models"
+              dbt build --select state:modified+ --state target/
           fi
 
       - name: Print End
-        run: echo "Exiting the workflow"
+        run: echo "dbt workflow completed"
