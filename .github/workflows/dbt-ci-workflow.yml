@@ -57,7 +57,7 @@ jobs:
         run: |
           if [ -f state/manifest.json ]; then
             echo "Previous manifest found, running modified + downstream models"
-            dbt build --select state:modified+ --state state/ --defer --target dev
+            dbt build --select +state:modified+ --state state/ --defer --target dev
           else
             echo "No manifest found, running full build"
             dbt build --target dev
