@@ -10,6 +10,7 @@ jobs:
       MYSQL_USER: ${{ secrets.MYSQL_USER }}
       MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
       MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+
     steps:
       - name: Print Greeting
         run: echo "Executing PR validation workflow"
@@ -52,11 +53,21 @@ jobs:
             echo "⚠️ No manifest found in cache"
           fi
 
-      # ✅ Run dbt build with state:modified+
+      # ✅ Print models that will run
+      - name: Preview model selection
+        run: |
+          if [ -f state/manifest.json ]; then
+            echo "👉 Models selected for build:"
+            dbt ls --select +state:modified+ --state state/ --defer --target dev
+          else
+            echo "⚠️ No state manifest found, will run full build"
+          fi
+
+      # ✅ Run dbt build with forced downstream
       - name: Run dbt with state
         run: |
           if [ -f state/manifest.json ]; then
-            echo "Previous manifest found, running modified + downstream models"
+            echo "Previous manifest found, running modified + ALL downstream models"
             dbt build --select +state:modified+ --state state/ --defer --target dev
           else
             echo "No manifest found, running full build"
