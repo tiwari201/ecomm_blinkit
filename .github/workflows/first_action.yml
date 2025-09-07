@@ -30,7 +30,8 @@ jobs:
       - name: Set up dbt profile
         run: |
           mkdir -p ~/.dbt
-          cp .github/dbt_profile/profiles.yml ~/.dbt/profiles.yml
+          # ✅ update this path to wherever your profiles.yml actually is
+          cp profiles.yml ~/.dbt/profiles.yml
 
       - name: Run dbt models
         run: dbt build
