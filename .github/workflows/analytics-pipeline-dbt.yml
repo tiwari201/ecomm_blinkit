@@ -27,6 +27,10 @@ jobs:
 
       - name: Run dbt build on main
         run: dbt build --target dev
+        env:
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
       # ✅ Save manifest for PR jobs
       - name: Save dbt manifest to cache
