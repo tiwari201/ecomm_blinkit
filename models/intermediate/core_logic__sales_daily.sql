@@ -1,4 +1,4 @@
-SELECT MD5(CONCAT(dim_customer.customer_id,agg_orders.order_id, agg_orders.order_time)) as sales_surrogate_key,
+SELECT MD5(CONCAT(dim_customer.customer_id,agg_orders.order_id, agg_orders.order_time)) as sales_surrogate_key, -- Creating a surrogate key
        dim_customer.customer_id,
        dim_products.product_name,
        dim_products.product_brand,
