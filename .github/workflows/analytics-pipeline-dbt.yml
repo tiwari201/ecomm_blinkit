@@ -20,11 +20,12 @@ jobs:
 
       - name: Set up Python venv and install dbt
         run: |
-          python3 -m venv .venv
+          python3.11 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip
           # ✅ pin protobuf and dbt versions for stability
-          pip install "protobuf<5" "dbt-core==1.8.4" "dbt-mysql==1.8.2"
+          pip install --upgrade pip setuptools wheel
+          pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
 
