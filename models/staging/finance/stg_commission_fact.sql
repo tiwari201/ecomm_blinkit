@@ -2,5 +2,6 @@ SELECT  order_id                    as order_id,  -- Primary Key added for dbt
         delivery_partner_id         as delivery_partner_id,
         commission_amount           as commission_amount,
         payout_status               as delivery_partner_payout_status,
-        current_timestamp()          as dbt_updated_at
+        current_timestamp()          as dbt_updated_at,
+        current_timestamp() as dbt_run_at
 FROM {{ source('db_src_finance', 'commission_fact') }}
