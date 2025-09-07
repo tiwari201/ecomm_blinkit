@@ -55,6 +55,7 @@ jobs:
           else
               echo "No cached manifest found, running full build"
               dbt build --target dev
+          fi
 
       - name: Update cached manifest
         if: github.ref == 'refs/heads/main'
