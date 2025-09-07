@@ -1,4 +1,4 @@
-name: dbt-mysql-build
+name: dbt-pr-build
 
 on:
   workflow_dispatch:
