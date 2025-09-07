@@ -12,7 +12,7 @@ SELECT MD5(CONCAT(dim_customer.customer_id,agg_orders.order_id, agg_orders.order
        agg_orders.total_order_amount,
        agg_orders.order_discount,
        agg_orders.payment_mode,
-       GREATEST(dim_customer.update_date, dim_products.update_date, dim_stores.update_date) AS max_update_date
+       GREATEST(dim_customer.update_date, dim_products.update_date, dim_stores.update_date) AS max_update_date -- to be used in incremental load
 FROM {{ ref('stg_dim_customer') }} AS dim_customer
 LEFT JOIN {{ref('stg_orders_agg_fact') }} AS agg_orders
     ON dim_customer.customer_id = agg_orders.customer_id
