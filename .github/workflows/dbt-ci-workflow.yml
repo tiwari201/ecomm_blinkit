@@ -47,14 +47,14 @@ jobs:
         run: |
           mkdir -p state
 
-          # Use cached manifest if it exists
           if [ -f target/manifest.json ]; then
               cp target/manifest.json state/manifest.json
-              echo "Previous manifest found, running only modified + downstream models"
+              echo "Previous manifest found, running modified + downstream models"
+              # ✅ Run modified models + downstreams using cached state and defer to main
               dbt build --select state:modified+ --state state/ --defer --target dev
           else
               echo "No cached manifest found, running full build"
-              dbt build
+              dbt build --target dev
           fi
 
       - name: Update cached manifest
