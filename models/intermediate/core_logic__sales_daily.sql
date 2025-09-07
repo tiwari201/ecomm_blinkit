@@ -23,4 +23,4 @@ LEFT JOIN {{ ref('stg_dim_stores') }} AS dim_stores
 )
 
 select *
-from ini_data
+from ini_data --dummy comment for testing 
