@@ -23,14 +23,14 @@ jobs:
           python3 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip
-          pip install dbt-core dbt-mysql
+          # ✅ pin protobuf and dbt versions for stability
+          pip install "protobuf<5" "dbt-core==1.8.4" "dbt-mysql==1.8.2"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
 
       - name: Set up dbt profile
         run: |
           mkdir -p ~/.dbt
-          # ✅ update this path to wherever your profiles.yml actually is
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
       - name: Run dbt models
