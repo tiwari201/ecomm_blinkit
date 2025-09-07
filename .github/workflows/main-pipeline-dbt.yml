@@ -1,15 +1,25 @@
-name: dbt_main_build
+name: dbt_pr_validation
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
 
 jobs:
-  run-dbt-main:
+  run-dbt:
     runs-on: self-hosted
+    env:
+      MYSQL_USER: ${{ secrets.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Print Greeting
+        run: echo "Executing PR validation workflow"
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+
+      - name: Check Python version
+        run: python3 --version
 
       - name: Set up Python venv and install dbt
         run: |
@@ -25,16 +35,58 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: Run dbt build on main
-        run: dbt build --target dev
+      # Restore manifest from main branch (cache or checkout)
+      - name: Restore dbt manifest cache
+        uses: actions/cache@v3
+        with:
+          path: target/manifest.json
+          key: dbt-manifest-main
+
+      - name: Prepare state directory
+        run: |
+          mkdir -p state
+          if [ -f target/manifest.json ]; then
+            cp target/manifest.json state/manifest.json
+            echo "✅ Manifest restored from cache"
+          else
+            echo "⚠️ No manifest found in cache"
+          fi
+
+      - name: List models selected for build
+        run: |
+          if [ -f state/manifest.json ]; then
+            echo "👉 Models selected for build:"
+            dbt ls --select +state:modified+ --state state/ --defer-state state/ --target dev
+          else
+            echo "⚠️ No state manifest found, will run full build"
+          fi
         env:
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
-      # ✅ Save manifest for PR jobs
+      # Run dbt build with modified + downstream models
+      - name: Run dbt build
+        run: |
+          if [ -f state/manifest.json ]; then
+            echo "✅ Running modified + downstream models"
+            dbt build --select +state:modified+ --state state/ --defer-state state/ --target dev
+          else
+            echo "⚠️ No manifest found, running full build"
+            dbt build --target dev
+          fi
+        env:
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+
+      # Save manifest for future PRs
       - name: Save dbt manifest to cache
+        if: always()
         uses: actions/cache/save@v3
         with:
           path: target/manifest.json
           key: dbt-manifest-main
+
+      - name: Print End
+        run: echo "Exiting the workflow"
