@@ -1,4 +1,4 @@
-SELECT  order_id                as order_id,
+SELECT  order_id                as order_id, -- Primary key added for dbt
         user_id                 as customer_id,
         total_amount            as total_order_amount,
         payment_mode            as payment_mode,

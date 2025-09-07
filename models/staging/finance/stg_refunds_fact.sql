@@ -1,4 +1,4 @@
-SELECT  refund_id                   as refund_id,
+SELECT  refund_id                   as refund_id, -- unique key
         order_id                    as order_id,
         amount_refunded             as amount_refunded,
         refund_reason               as refund_reason
