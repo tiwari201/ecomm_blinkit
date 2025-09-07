@@ -1,21 +1,20 @@
-name: dbt-mysql-build
+name: dbt_pr_validation
 
 on:
-  workflow_dispatch:
   pull_request:
-    branches:
-      - main
 
 jobs:
-  dbt-job:
+  run-dbt:
     runs-on: self-hosted
     env:
       MYSQL_USER: ${{ secrets.MYSQL_USER }}
       MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
       MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
-
     steps:
-      - name: Checkout code
+      - name: Print Greeting
+        run: echo "Executing PR validation workflow"
+
+      - name: Checkout PR branch
         uses: actions/checkout@v3
 
       - name: Check Python version
@@ -35,31 +34,42 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: Cache dbt manifest from previous main build
+      # ✅ Restore manifest from cache
+      - name: Restore dbt manifest cache
         uses: actions/cache@v3
-        id: dbt-manifest-cache
         with:
           path: target/manifest.json
           key: dbt-manifest-main
-          restore-keys: dbt-manifest-main
 
-      - name: Run dbt models selectively if possible
+      # ✅ Copy manifest into state if found
+      - name: Prepare state directory
         run: |
           mkdir -p state
-
           if [ -f target/manifest.json ]; then
-              cp target/manifest.json state/manifest.json
-              echo "Previous manifest found, running modified + downstream models"
-              # ✅ Correct: use valid target 'dev' instead of 'main'
-              dbt build --select state:modified+ --state state/ --defer --target dev
+            cp target/manifest.json state/manifest.json
+            echo "✅ Manifest restored from cache"
           else
-              echo "No cached manifest found, running full build"
-              dbt build --target dev
+            echo "⚠️ No manifest found in cache"
           fi
 
-      - name: Update cached manifest
-        if: github.ref == 'refs/heads/main'
+      # ✅ Run dbt build with state:modified+
+      - name: Run dbt with state
         run: |
-          echo "Updating cached manifest.json from main branch"
-          mkdir -p target
-          cp target/manifest.json target/manifest.json
+          if [ -f state/manifest.json ]; then
+            echo "Previous manifest found, running modified + downstream models"
+            dbt build --select state:modified+ --state state/ --defer --target dev
+          else
+            echo "No manifest found, running full build"
+            dbt build --target dev
+          fi
+
+      # ✅ Save manifest back into cache for next runs
+      - name: Save dbt manifest to cache
+        if: always()
+        uses: actions/cache/save@v3
+        with:
+          path: target/manifest.json
+          key: dbt-manifest-main
+
+      - name: Print End
+        run: echo "Exiting the workflow"
