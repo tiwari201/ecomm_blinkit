@@ -1,0 +1,9 @@
+version: 2
+      
+sources:
+  - name: db_src_operations
+    database: db_src_operations   # optional, depends on your setup
+    schema: db_src_operations
+    tables:
+      - name: delivery_partner_dim
+      - name: delivery_fact

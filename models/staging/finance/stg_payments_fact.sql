@@ -1,0 +1,7 @@
+SELECT  order_id                as order_id,
+        user_id                 as customer_id,
+        total_amount            as total_order_amount,
+        payment_mode            as payment_mode,
+        payment_id              as transaction_id,
+        payment_status          as payment_status
+FROM {{ source('db_src_finance', 'payment_fact') }}

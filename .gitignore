@@ -1,0 +1,26 @@
+# Ignore dbt build artifacts and common files
+/target/
+/dbt_packages/
+.dbt/
+logs/
+manifest.json
+run_results.json
+graph_summary.json
+partial_parse.msgpack
+*.pyc
+__pycache__/
+.DS_Store
+.env
+*.pub
+github_blinkit_secrets
+ecomm_blinkit_ssh
+*.gz
+.github
+actions-runner/externals/node24/bin/node
+actions-runner/externals/node20/bin/node
+*git-filter-repo
+dbt-env/lib/python3.11/site-packages/git_filter_repo-2.47.0.dist-info/
+dbt-env/lib/python3.11/site-packages/git_filter_repo.py
+dbt.log
+*dbt-env/lib/python3.11
+dbt-env/

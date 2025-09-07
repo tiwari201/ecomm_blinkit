@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: db_src_sales
+    database: db_src_sales   # optional, depends on your setup
+    schema: db_src_sales
+    tables:
+      - name: product_dim
+      - name: store_dim
+      - name: customer_dim
+      - name: order_items_fact
+      - name: orders_fact 
+      

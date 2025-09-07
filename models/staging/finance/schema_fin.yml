@@ -1,0 +1,11 @@
+version: 2
+
+
+sources:
+  - name: db_src_finance
+    database: db_src_finance   # optional, depends on your setup
+    schema: db_src_finance
+    tables:
+      - name: commission_fact
+      - name: payment_fact
+      - name: refunds_fact
