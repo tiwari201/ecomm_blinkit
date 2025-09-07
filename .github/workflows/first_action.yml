@@ -31,7 +31,7 @@ jobs:
         run: |
           mkdir -p ~/.dbt
           # ✅ update this path to wherever your profiles.yml actually is
-          cp profiles.yml ~/.dbt/profiles.yml
+          cp .github/profiles.yml ~/.dbt/profiles.yml
 
       - name: Run dbt models
         run: dbt build
