@@ -1,3 +1,5 @@
+with ini_data as 
+(
 SELECT MD5(CONCAT(dim_customer.customer_id,agg_orders.order_id, agg_orders.order_time)) as sales_surrogate_key, -- Creating a surrogate key
        dim_customer.customer_id,
        dim_products.product_name,
@@ -18,3 +20,7 @@ LEFT JOIN {{ref('stg_dim_products') }} AS dim_products
     ON dim_products.product_id = agg_orders.product_id
 LEFT JOIN {{ ref('stg_dim_stores') }} AS dim_stores
     ON dim_stores.dark_store_id = agg_orders.dark_store_id
+)
+
+select *
+from ini_data
