@@ -1,29 +1,20 @@
-name: first_workflow
-on: workflow_dispatch
+name: dbt_main_build
+
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  first-job:
+  run-dbt-main:
     runs-on: self-hosted
-    env:
-      MYSQL_USER: ${{ secrets.MYSQL_USER }}
-      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-      MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
     steps:
-      - name: Print Greeting
-        run: echo "Executing greetings"
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Check Python version
-        run: python3 --version
+      - uses: actions/checkout@v3
 
       - name: Set up Python venv and install dbt
         run: |
           python3.11 -m venv .venv
           source .venv/bin/activate
-          pip install --upgrade pip
-          # ✅ pin protobuf and dbt versions for stability
           pip install --upgrade pip setuptools wheel
           pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
@@ -34,8 +25,12 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: Run dbt models
-        run: dbt build
+      - name: Run dbt build on main
+        run: dbt build --target dev
 
-      - name: Print End
-        run: echo "Exiting the workflow"
+      # ✅ Save manifest for PR jobs
+      - name: Save dbt manifest to cache
+        uses: actions/cache/save@v3
+        with:
+          path: target/manifest.json
+          key: dbt-manifest-main
