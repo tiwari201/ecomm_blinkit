@@ -47,7 +47,13 @@ jobs:
           git checkout origin/main -- target/manifest.json || echo "No manifest in main branch yet"
 
           # run only changed models + downstreams
-          dbt build --select state:modified+ --state target/
+          if [ ! -f state/manifest.json ]; then
+            echo "No previous manifest found, running full build"
+            dbt build
+          else
+            echo "Previous manifest found, running only changed + downstream models"
+          dbt build --select state:modified+ --state state/
+          fi
 
       - name: Print End
         run: echo "Exiting the workflow"
