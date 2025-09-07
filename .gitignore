@@ -4,6 +4,7 @@
 .dbt/
 logs/
 run_results.json
+manifest.json
 graph_summary.json
 partial_parse.msgpack
 *.pyc
