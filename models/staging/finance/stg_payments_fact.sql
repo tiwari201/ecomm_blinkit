@@ -3,5 +3,7 @@ SELECT  order_id                as order_id, -- Primary key added for dbt
         total_amount            as total_order_amount,
         payment_mode            as payment_mode,
         payment_id              as transaction_id,
-        payment_status          as payment_status
+        payment_status          as payment_status,
+        current_timestamp()      as dbt_updated_at,
+        current_timestamp() as dbt_run_at
 FROM {{ source('db_src_finance', 'payment_fact') }}
