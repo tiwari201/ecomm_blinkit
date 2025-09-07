@@ -3,7 +3,6 @@
 /dbt_packages/
 .dbt/
 logs/
-manifest.json
 run_results.json
 graph_summary.json
 partial_parse.msgpack
