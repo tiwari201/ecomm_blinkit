@@ -1,0 +1,29 @@
+name: first_workflow
+on: workflow_dispatch
+
+jobs:
+  first-job:
+    runs-on: self-hosted
+    env:
+      MYSQL_USER: ${{ secrets.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+    steps:
+      - name: Print Greeting
+        run: echo "Executing greetings"
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dbt
+        run: pip install dbt-core dbt-mysql
+      - name: Set up dbt profile
+        run: |
+          mkdir -p ~/.dbt
+          cp .github/dbt_profile/profiles.yml ~/.dbt/profiles.yml
+      - name: Run dbt models
+        run: dbt build
+      - name: Print End
+        run: echo "Exiting the workflow"
