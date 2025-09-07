@@ -51,7 +51,7 @@ jobs:
           if [ -f target/manifest.json ]; then
               cp target/manifest.json state/manifest.json
               echo "Previous manifest found, running only modified + downstream models"
-              dbt build --select state:modified+ --state state/
+              dbt build --select state:modified+ --state state/ --defer --target main
           else
               echo "No cached manifest found, running full build"
               dbt build
