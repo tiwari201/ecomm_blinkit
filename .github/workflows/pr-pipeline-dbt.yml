@@ -20,14 +20,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ✅ Download latest manifest artifact from dbt-full-build workflow
+      # ✅ Download manifest.json from last successful full build
       - name: Download manifest from dbt-full-build
         uses: dawidd6/action-download-artifact@v3
         with:
-          workflow: dbt-full-build.yml
+          workflow: dbt-full-build       # must match `name:` in dbt-full-build.yml
           workflow_conclusion: success
           name: dbt-manifest
           path: state
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Ensure target directory exists
         run: mkdir -p target
@@ -48,7 +49,7 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: "Debug: List models selected for build (preview)"
+      - name: Debug: List models selected for build (preview)
         run: |
           if [ -f state/manifest.json ]; then
             echo "👉 Models selected for build (preview):"
@@ -75,14 +76,12 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
-      # ✅ Save new manifest for next PRs
-      - name: Save dbt manifest to artifacts
+      - name: Save dbt manifest to artifacts (for next PRs)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dbt-manifest
           path: target/manifest.json
-          retention-days: 30
 
       - name: Print End
         run: echo "Exiting the workflow"
