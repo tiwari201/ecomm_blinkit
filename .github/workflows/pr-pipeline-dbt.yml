@@ -20,8 +20,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ✅ Download manifest.json from last successful full build
-      - name: Download manifest from dbt-full-build
+      # ✅ Download manifest.json from last successful full build on main branch
+      - name: "Download manifest from dbt-full-build"
         uses: dawidd6/action-download-artifact@v3
         with:
           workflow: dbt-full-build       # must match `name:` in dbt-full-build.yml
@@ -29,6 +29,7 @@ jobs:
           name: dbt-manifest
           path: state
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main                       # 👈 ensures we fetch artifact from main branch workflow runs
 
       - name: Ensure target directory exists
         run: mkdir -p target
@@ -70,7 +71,6 @@ jobs:
           else
             echo "⚠️ No manifest found, running full build"
             dbt build --target dev
-          fi
         env:
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
