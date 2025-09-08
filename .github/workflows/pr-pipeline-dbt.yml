@@ -30,22 +30,15 @@ jobs:
           key: dbt-manifest-main
           restore-keys: dbt-manifest-main
 
-      # ---- Python Setup (system python) ----
-      - name: Check system Python version
+      # ---- Python Setup (via venv) ----
+      - name: Set up Python venv and install dbt
         run: |
-          which python3 || true
-          python3 --version || true
-
-      - name: Ensure pip is installed
-        run: |
-          curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-          python3 get-pip.py --user
-          python3 -m pip --version
-
-      - name: Install dbt & deps
-        run: |
-          python3 -m pip install --upgrade pip setuptools wheel
-          python3 -m pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
+          python3 -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
+          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
+          echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
 
       # ---- dbt Profile Setup ----
       - name: Set up dbt profile
