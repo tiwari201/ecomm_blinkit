@@ -20,49 +20,39 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure target directory exists (for cache restore)
+      # ✅ Download manifest.json from last full build
+      - name: Download manifest from full build
+        uses: actions/download-artifact@v4
+        with:
+          name: dbt-manifest
+          path: state
+
+      - name: Ensure target directory exists
         run: mkdir -p target
 
-      - name: Restore dbt manifest cache (target/)
-        uses: actions/cache@v3
-        with:
-          path: target
-          key: dbt-manifest-main
-          restore-keys: dbt-manifest-main
-
-      # ---- Python Setup (via venv) ----
-      - name: Set up Python venv and install dbt
+      - name: Set up Python (system python3)
         run: |
+          which python3
+          python3 --version
           python3 -m venv .venv
           source .venv/bin/activate
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
 
-      # ---- dbt Profile Setup ----
       - name: Set up dbt profile
         run: |
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: Prepare state directory (copy manifest -> state/)
-        run: |
-          mkdir -p state
-          if [ -f target/manifest.json ]; then
-            cp target/manifest.json state/manifest.json
-            echo "✅ Manifest restored into state/manifest.json"
-          else
-            echo "⚠️ No manifest found in target/ — state/ will be empty"
-          fi
-
-      - name: "Debug: List models selected for build (preview)"
+      - name: Debug: List models selected for build (preview)
         run: |
           if [ -f state/manifest.json ]; then
             echo "👉 Models selected for build (preview):"
             dbt ls --select "+state:modified+" --state state/ --target dev
           else
-            echo "⚠️ No state manifest found, dbt ls will show project-wide if used"
+            echo "⚠️ No manifest found, will fall back to full build"
           fi
         env:
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
@@ -72,7 +62,7 @@ jobs:
       - name: Run dbt build (modified + upstream + downstream)
         run: |
           if [ -f state/manifest.json ]; then
-            echo "✅ Running modified + upstream + downstream (no deferral)"
+            echo "✅ Running modified + upstream + downstream"
             dbt build --select "+state:modified+" --state state/ --target dev
           else
             echo "⚠️ No manifest found, running full build"
@@ -83,12 +73,12 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
-      - name: Save dbt manifest to cache (so future PRs can use it)
+      - name: Save dbt manifest to artifacts (for next PRs)
         if: always()
-        uses: actions/cache@v3
+        uses: actions/upload-artifact@v4
         with:
-          path: target
-          key: dbt-manifest-main-${{ github.sha }}
+          name: dbt-manifest
+          path: target/manifest.json
 
       - name: Print End
         run: echo "Exiting the workflow"
