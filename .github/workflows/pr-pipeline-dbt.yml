@@ -20,11 +20,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download manifest from full build
-        id: download-manifest
-        continue-on-error: true
-        uses: actions/download-artifact@v4
+      # ✅ Download latest manifest artifact from dbt-full-build workflow
+      - name: Download manifest from dbt-full-build
+        uses: dawidd6/action-download-artifact@v3
         with:
+          workflow: dbt-full-build.yml
+          workflow_conclusion: success
           name: dbt-manifest
           path: state
 
@@ -74,12 +75,14 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
-      - name: Save dbt manifest to artifacts (for next PRs)
+      # ✅ Save new manifest for next PRs
+      - name: Save dbt manifest to artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dbt-manifest
           path: target/manifest.json
+          retention-days: 30
 
       - name: Print End
         run: echo "Exiting the workflow"
