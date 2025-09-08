@@ -20,10 +20,10 @@ jobs:
 
       - name: Set up Python venv and install dbt
         run: |
-          python3.11 -m venv .venv
+          python3 -m venv .venv
           source .venv/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
 
@@ -33,16 +33,16 @@ jobs:
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
       - name: Run full dbt build
-        run: |
-          dbt build --target dev
+        run: dbt build --target dev
 
-      # 👉 Upload manifest.json so PR workflow can consume it
+      # ✅ Upload manifest.json
       - name: Upload manifest.json
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dbt-manifest
           path: target/manifest.json
+          retention-days: 30   # keep for 30 days (adjust if needed)
 
       - name: Print End
         run: echo "dbt workflow completed"
