@@ -49,7 +49,7 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: Debug: List models selected for build (preview)
+      - name: "Debug: List models selected for build (preview)"
         run: |
           if [ -f state/manifest.json ]; then
             echo "👉 Models selected for build (preview):"
