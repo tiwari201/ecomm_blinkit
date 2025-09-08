@@ -29,7 +29,7 @@ jobs:
           name: dbt-manifest
           path: state
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          ref: main                       # 👈 ensures we fetch artifact from main branch workflow runs
+          branch: main                       # 👈 ensures we fetch artifact from main branch workflow runs
 
       - name: Ensure target directory exists
         run: mkdir -p target
