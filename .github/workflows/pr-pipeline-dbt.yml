@@ -20,16 +20,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ✅ Download manifest.json from last successful full build on main branch
-      - name: "Download manifest from dbt-full-build"
+      # ✅ Download manifest.json from exact full build run
+      - name: "Download manifest from full build run"
         uses: dawidd6/action-download-artifact@v3
         with:
-          workflow: dbt-full-build       # must match `name:` in dbt-full-build.yml
-          workflow_conclusion: success
+          workflow: dbt-full-build         # exact workflow name
+          run_id: 17542386211              # your successful full build run ID
           name: dbt-manifest
           path: state
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main                       # 👈 ensures we fetch artifact from main branch workflow runs
 
       - name: Ensure target directory exists
         run: mkdir -p target
