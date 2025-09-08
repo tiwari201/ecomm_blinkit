@@ -18,15 +18,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Check Python version
-        run: python3 --version
-
       - name: Set up Python venv and install dbt
         run: |
           python3.11 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip setuptools wheel
-          # pin protobuf and dbt versions for stability
           pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
@@ -36,20 +32,17 @@ jobs:
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      - name: Run dbt models selectively if possible
+      - name: Run full dbt build
         run: |
-          mkdir -p state
-          git fetch origin main
-          # try to get previous manifest from main
-          git checkout origin/main -- target/manifest.json || echo "No manifest in main branch yet"
+          dbt build --target dev
 
-          if [ ! -f target/manifest.json ]; then
-              echo "No previous manifest found, running full build"
-              dbt build
-          else
-              echo "Previous manifest found, running only changed + downstream models"
-              dbt build --select state:modified+ --state target/
-          fi
+      # 👉 Upload manifest.json so PR workflow can consume it
+      - name: Upload manifest.json
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-manifest
+          path: target/manifest.json
 
       - name: Print End
         run: echo "dbt workflow completed"
