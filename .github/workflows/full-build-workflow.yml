@@ -1,10 +1,7 @@
-name: dbt-mysql-build
+name: dbt-full-build
 
 on:
   workflow_dispatch:    # manual trigger
-  pull_request:         # runs when PR is opened/updated against main
-    branches:
-      - main
 
 jobs:
   dbt-job:
