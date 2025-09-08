@@ -27,10 +27,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: target
-          # choose a key strategy that makes sense for your org (see notes below)
           key: dbt-manifest-main
-          restore-keys: |
-            dbt-manifest-main
+          restore-keys: dbt-manifest-main
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -52,19 +50,18 @@ jobs:
           mkdir -p state
           if [ -f target/manifest.json ]; then
             cp target/manifest.json state/manifest.json
-            echo "✅ Manifest restored into state/manifest.json"
+            echo "OK: Manifest restored into state/manifest.json"
           else
-            echo "⚠️ No manifest found in target/ — state/ will be empty"
+            echo "WARN: No manifest found in target/ - state/ will be empty"
           fi
 
-      - name: Debug: List models selected for build (preview)
+      - name: "Debug: List models selected for build (preview)"
         run: |
           if [ -f state/manifest.json ]; then
-            echo "👉 Models selected for build (preview):"
-            # NOTE: quote the selector to avoid shell/YAML surprises
+            echo "Models selected for build (preview):"
             dbt ls --select "+state:modified+" --state state/ --target dev
           else
-            echo "⚠️ No state manifest found, dbt ls will show project-wide if used"
+            echo "WARN: No state manifest found, dbt ls will show project-wide if used"
           fi
         env:
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
@@ -74,13 +71,10 @@ jobs:
       - name: Run dbt build (modified + upstream + downstream)
         run: |
           if [ -f state/manifest.json ]; then
-            echo "✅ Running modified + upstream + downstream (no deferral)"
+            echo "Running modified + upstream + downstream (no deferral)"
             dbt build --select "+state:modified+" --state state/ --target dev
-            # If you prefer to *not* rebuild upstream parents and instead defer to the manifest,
-            # use this alternative:
-            # dbt build --select "+state:modified+" --defer --state state/ --target dev
           else
-            echo "⚠️ No manifest found, running full build"
+            echo "WARN: No manifest found, running full build"
             dbt build --target dev
           fi
         env:
