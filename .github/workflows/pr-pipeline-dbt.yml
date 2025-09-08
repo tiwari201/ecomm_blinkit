@@ -17,60 +17,68 @@ jobs:
 
       - name: Checkout PR branch
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Check Python version
-        run: python3 --version
+      - name: Ensure target directory exists (for cache restore)
+        run: mkdir -p target
 
-      - name: Set up Python venv and install dbt
+      - name: Restore dbt manifest cache (target/)
+        uses: actions/cache@v3
+        with:
+          path: target
+          # choose a key strategy that makes sense for your org (see notes below)
+          key: dbt-manifest-main
+          restore-keys: |
+            dbt-manifest-main
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dbt & deps
         run: |
-          python3.11 -m venv .venv
-          source .venv/bin/activate
-          pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip setuptools wheel
           pip install "protobuf<5" "dbt-core==1.7.9" "dbt-mysql==1.7.0"
-          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
-          echo "PATH=$PWD/.venv/bin:$PATH" >> $GITHUB_ENV
 
       - name: Set up dbt profile
         run: |
           mkdir -p ~/.dbt
           cp .github/profiles.yml ~/.dbt/profiles.yml
 
-      # Restore manifest from main branch (cache or checkout)
-      - name: Restore dbt manifest cache
-        uses: actions/cache@v3
-        with:
-          path: target/manifest.json
-          key: dbt-manifest-main
-
-      - name: Prepare state directory
+      - name: Prepare state directory (copy manifest -> state/)
         run: |
           mkdir -p state
           if [ -f target/manifest.json ]; then
             cp target/manifest.json state/manifest.json
-            echo "✅ Manifest restored from cache"
+            echo "✅ Manifest restored into state/manifest.json"
           else
-            echo "⚠️ No manifest found in cache"
+            echo "⚠️ No manifest found in target/ — state/ will be empty"
           fi
 
-      - name: List models selected for build
+      - name: Debug: List models selected for build (preview)
         run: |
           if [ -f state/manifest.json ]; then
-            echo "👉 Models selected for build:"
-            dbt ls --select +state:modified+ --state state/ --defer-state state/ --target dev
+            echo "👉 Models selected for build (preview):"
+            # NOTE: quote the selector to avoid shell/YAML surprises
+            dbt ls --select "+state:modified+" --state state/ --target dev
           else
-            echo "⚠️ No state manifest found, will run full build"
+            echo "⚠️ No state manifest found, dbt ls will show project-wide if used"
           fi
         env:
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
-      # Run dbt build with modified + downstream models
-      - name: Run dbt build
+      - name: Run dbt build (modified + upstream + downstream)
         run: |
           if [ -f state/manifest.json ]; then
-            echo "✅ Running modified + downstream models"
-            dbt build --select +state:modified+ --state state/ --defer-state state/ --target dev
+            echo "✅ Running modified + upstream + downstream (no deferral)"
+            dbt build --select "+state:modified+" --state state/ --target dev
+            # If you prefer to *not* rebuild upstream parents and instead defer to the manifest,
+            # use this alternative:
+            # dbt build --select "+state:modified+" --defer --state state/ --target dev
           else
             echo "⚠️ No manifest found, running full build"
             dbt build --target dev
@@ -80,13 +88,12 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
-      # Save manifest for future PRs
-      - name: Save dbt manifest to cache
+      - name: Save dbt manifest to cache (so future PRs can use it)
         if: always()
-        uses: actions/cache/save@v3
+        uses: actions/cache@v3
         with:
-          path: target/manifest.json
-          key: dbt-manifest-main
+          path: target
+          key: dbt-manifest-main-${{ github.sha }}
 
       - name: Print End
         run: echo "Exiting the workflow"
